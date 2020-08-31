@@ -145,11 +145,14 @@ def dict2plot_x_keys(indict, filename,
     ylim : tuple
         tuple of limits (start, stop) for y-axis
     """
-    # df = pd.DataFrame.from_dict(phaseogram, orient="index", columns=['count'])
-    xx = list(indict.keys())
-    yy = [indict[k] for k in xx]
+    # Sort input 
+    indict_sort = sorted(indict.items(), key=lambda item: int(item[0]))
+    # xx = list(indict.keys())
+    # yy = [indict[k] for k in xx]
+    # xx = [int(i) for i in xx]
     # df['phase'] = [int(i) for i in df.index]
-    xx = [int(i) for i in xx]
+    xx = [int(i) for i,j in indict_sort]
+    yy = [int(j) for i,j in indict_sort]
 
     plt.figure()
     if title:
@@ -163,7 +166,7 @@ def dict2plot_x_keys(indict, filename,
     if ylim:
         plt.ylim(ylim)
     # plt.scatter(df['phase'], df['count'])
-    plt.scatter(xx,yy)
+    plt.plot(xx,yy)
     plt.savefig(filename)
 
 
@@ -228,6 +231,8 @@ highacc = [int(tlen_histogram[k]) for k in range(145,151) if tlen_histogram[k]]
 tlen_total = sum([int(v) for v in tlen_histogram.values()])
 highacc_pc = 100 * sum(highacc) / tlen_total
 logging.info(f"High accuracy fragments constitute {round(highacc_pc,2)}% of fragments")
+if highacc_pc < 20:
+    logging.info("Percentage is lower than 20%, high-accuracy method may not work well")
 
 
 # listtuples_to_tsv(fragstarts,"test_fragstarts.tsv")
