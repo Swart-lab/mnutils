@@ -8,12 +8,17 @@ import json
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", type=str, help="Input BAM file")
-parser.add_argument("-o", "--output", type=str, help="Output file", default="filter_out.bam")
+parser.add_argument("-o", "--output", type=str,
+                    help="Output file", default="filter_out.bam")
 parser.add_argument("--scaffold", type=str, help="Scaffold to filter")
-parser.add_argument("--min_tlen", type=int, default=126, help="Minimum template insert length for read pair")
-parser.add_argument("--max_tlen", type=int, default=166, help="Maximum template insert length for read pair")
-parser.add_argument("--max_mismatch", type=int, default=1, help="Maximum mismatch allowed per alignment")
+parser.add_argument("--min_tlen", type=int, default=126,
+                    help="Minimum template insert length for read pair")
+parser.add_argument("--max_tlen", type=int, default=166,
+                    help="Maximum template insert length for read pair")
+parser.add_argument("--max_mismatch", type=int, default=1,
+                    help="Maximum mismatch allowed per alignment")
 args = parser.parse_args()
+
 
 def get_midpoint(segment):
     """
@@ -37,6 +42,7 @@ def get_midpoint(segment):
         midpoint = segment.reference_start + (segment.template_length/2)
     return(ref, midpoint, segment.template_length)
 
+
 def get_frag_start(segment):
     """
     Report fragment start position and orientation, for phaseogram
@@ -52,9 +58,10 @@ def get_frag_start(segment):
         tuple of reference name, fragment start pos, orientation
     """
     if segment.is_reverse:
-        return(segment.reference_name,segment.reference_end,"rev")
+        return(segment.reference_name, segment.reference_end, "rev")
     else:
-        return(segment.reference_name, segment.reference_start,"fwd")
+        return(segment.reference_name, segment.reference_start, "fwd")
+
 
 def listtuples_to_tsv(inlist, filename):
     """
@@ -67,11 +74,12 @@ def listtuples_to_tsv(inlist, filename):
     filename : str
         Path to file to write output
     """
-    with open (filename, "w") as fh:
+    with open(filename, "w") as fh:
         for tup in inlist:
             outstr = "\t".join([str(i) for i in tup])
             fh.write(outstr)
             fh.write("\n")
+
 
 def fragstarts_dict_to_phaseogram(indict):
     """
@@ -102,10 +110,11 @@ def fragstarts_dict_to_phaseogram(indict):
 
     return(phaseogram)
 
-#-------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
 
 # Open BAM files
-samfile = pysam.AlignmentFile(args.input,"rb")
+samfile = pysam.AlignmentFile(args.input, "rb")
 # samout = pysam.AlignmentFile(args.output,"wb",template=samfile)
 
 if args.scaffold:
@@ -129,7 +138,7 @@ for read in samiter:
         # each read
 
         # Count number of fragment starts per base position per scaffold
-        ref,pos,ori = get_frag_start(read)
+        ref, pos, ori = get_frag_start(read)
         if ori == "fwd":
             fragstarts_fwd[ref][pos] += 1
         elif ori == "rev":
@@ -153,5 +162,4 @@ with open("test_phaseogram_fwd.json", "w") as fh:
     json.dump(phaseogram_fwd, fh, indent=4)
 # with open("test_phaseogram_rev.json", "w") as fh:
 #     json.dump(phaseogram_rev, fh, indent=4)
-listtuples_to_tsv(midpoints,"test_midpoints.tsv")
-
+listtuples_to_tsv(midpoints, "test_midpoints.tsv")
