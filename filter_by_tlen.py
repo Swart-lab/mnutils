@@ -30,7 +30,8 @@ logging.basicConfig(format='[%(asctime)s] %(message)s', level=logging.INFO)
 
 def get_midpoint(segment):
     """
-    Get presumed nucleosome dyad midpoint from digest fragment
+    Get presumed nucleosome dyad midpoint from digest fragment. Non-integer
+    values will be rounded up.
 
     Parameters
     ----------
@@ -48,6 +49,7 @@ def get_midpoint(segment):
         midpoint = segment.reference_end - (segment.template_length/2)
     else:
         midpoint = segment.reference_start + (segment.template_length/2)
+    midpoint = round(midpoint)
     return(ref, midpoint, segment.template_length)
 
 
