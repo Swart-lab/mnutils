@@ -6,6 +6,9 @@ from collections import defaultdict
 import argparse
 import json
 
+import pandas as pd
+import matplotlib.pyplot as plt
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", type=str, help="Input BAM file")
 parser.add_argument("-o", "--output", type=str,
@@ -111,6 +114,26 @@ def fragstarts_dict_to_phaseogram(indict):
     return(phaseogram)
 
 
+def plot_phaseogram(phaseogram, filename):
+    """
+    Plot phaseogram to PNG file
+
+    Parameters
+    ----------
+    phaseogram : dict
+        Phaseogram produced by function fragstarts_dict_to_phaseogram()
+    filename : str
+        Path to file to write PNG file
+    """
+    df = pd.DataFrame.from_dict(phaseogram, orient="index", columns=['count'])
+    df['phase'] = [int(i) for i in df.index]
+
+    plt.figure()
+    plt.title("Phaseogram")
+    plt.scatter(df['phase'], df['count'])
+    plt.savefig(filename)
+
+
 # -----------------------------------------------------------------------------
 
 # Open BAM files
@@ -132,7 +155,9 @@ midpoints = []
 # for each aligned segment, report only those segments with template lengths
 # within min/max limits
 for read in samiter:
-    if not read.is_secondary and not read.is_duplicate and read.get_tag("NM") <= 1:
+    if (not read.is_secondary and
+            not read.is_duplicate and
+            read.get_tag("NM") <= 1):
         # TODO: Filter out reads with more than one mismatch, with NM tag
         # Actually mismatches should be summed for each read PAIR, not just
         # each read
@@ -144,7 +169,8 @@ for read in samiter:
         elif ori == "rev":
             fragstarts_rev[ref][pos] += 1
 
-        if read.template_length >= args.min_tlen and read.template_length <= args.max_tlen:
+        if (read.template_length >= args.min_tlen and
+                read.template_length <= args.max_tlen):
             # Record midpoints only for reads within fragment length criteria
             # samout.write(read)
             midpoints.append(get_midpoint(read))
