@@ -130,6 +130,8 @@ def dict2plot_x_keys(indict, filename,
     indict : dict
         dict containing parameters to plot. keys should be convertible to int.
         keys will be used as x-axis, values will be used as y-axis.
+    filename : str
+        Path to file to write PNG file
     title : str
         Title for the plot
     xlabel : str
@@ -140,8 +142,6 @@ def dict2plot_x_keys(indict, filename,
         tuple of limits (start, stop) for x-axis
     ylim : tuple
         tuple of limits (start, stop) for y-axis
-    filename : str
-        Path to file to write PNG file
     """
     # df = pd.DataFrame.from_dict(phaseogram, orient="index", columns=['count'])
     xx = list(indict.keys())
@@ -221,6 +221,13 @@ for read in samiter:
 
 samfile.close
 
+# Get high-accuracy fragments and calculate percentage of total fragments
+highacc = [int(tlen_histogram[k]) for k in range(145,151) if tlen_histogram[k]]
+tlen_total = sum([int(v) for v in tlen_histogram.values()])
+highacc_pc = 100 * sum(highacc) / tlen_total
+logging.info(f"High accuracy fragments constitute {round(highacc_pc,2)}% of fragments")
+
+
 # listtuples_to_tsv(fragstarts,"test_fragstarts.tsv")
 logging.info("Writing output files")
 with open(f"{args.output}.fragstarts_fwd.json", "w") as fh:
@@ -231,7 +238,7 @@ with open(f"{args.output}.tlen_hist.json","w") as fh:
     json.dump(tlen_histogram, fh, indent=4)
 dict2plot_x_keys(tlen_histogram, title="Template length histogram", 
         xlabel="length", ylabel="counts", 
-        xlim=(0,500),
+        xlim=(0,500), # hard-windowed to these limits for Illumina
         filename=f"{args.output}.tlen_hist.png")
 listtuples_to_tsv(midpoints, f"{args.output}.midpoints.tsv")
 
