@@ -2,6 +2,7 @@
 
 import pysam
 from collections import defaultdict
+from random import sample
 import argparse
 import json
 import logging
@@ -307,6 +308,33 @@ class Posmap(object):
         highacc_pc = 100 * sum(highacc) / tlen_total
         return(highacc_pc)
 
+
+    def global_phaseogram(self, window=1000, subsample=1000):
+        """Calculate phaseogram of nucleosome midpoints up and downstream
+        from nucleosome midpoints.
+
+        Parameters
+        ----------
+        window : int
+            Window (symmetrical, up and downstream) in bp
+        subsample : int
+            Randomly sample this number of positions per scaffold
+        """
+        phaseogram = defaultdict(int)
+
+        for scaffold in self._positionmap:
+            for pos in sample(list(self._positionmap[scaffold]), subsample):
+                left = pos - window
+                right = pos + window
+                width = right - left
+                for j in range(2 * 2 * window):
+                    jumppos = left + j/2
+                    if jumppos in self._positionmap[scaffold].keys():
+                        phaseogram[j/2 - window] += self._positionmap[scaffold][jumppos]
+
+        return(phaseogram)
+
+
     def feature_phaseogram(self, gff3_file, 
             target_feature="five_prime_UTR", window=1000):
         """Calculate phaseogram of nucleosome midpoints around start positions
@@ -369,7 +397,7 @@ if args.gff:
             xlim=(-1000,1000),
             filename=f"{args.output}.phaseogram.{args.feature}.png")
     if args.dump:
-        with open(f"{args.output}.feature_phaseogram.json","w") as fh:
+        with open(f"{args.output}.phaseogram.{args.feature}.json","w") as fh:
             json.dump(phaseogram_feature, fh, indent=4)
 
 logging.info("Writing output files")
@@ -385,7 +413,16 @@ if args.dump:
         json.dump(posmap._midpoints, fh, indent=4)
 
 if args.phaseogram:
-    logging.info("Calculating phaseogram")
+    logging.info("Calculating global phaseogram with subsample of 5000 per scaffold")
     # TODO: Implement phaseogram calculation with midpoints
+    phaseogram_global = posmap.global_phaseogram(subsample=5000)
+    dict2plot_x_keys(phaseogram_global, title=f"Global phaseogram for nucleosome midpoints",
+            xlabel="Position vs. nucleosome midpoint (bp)",
+            ylabel="Nucleosome midpoint counts",
+            xlim=(-1000,1000),
+            filename=f"{args.output}.phaseogram_global.png")
+    if args.dump:
+        with open(f"{args.output}.phaseogram_global.json","w") as fh:
+            json.dump(phaseogram_global, fh, indent=4)
 
 logging.info("Done")
