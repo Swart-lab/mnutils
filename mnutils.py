@@ -130,7 +130,7 @@ def dict2plot_x_keys(indict, filename,
         *, title=None, xlabel=None, ylabel=None, xlim=None, ylim=None,
         width=10, height=5):
     """
-    Plot phaseogram to PNG file
+    Plot data of key-value pairs in a dict to PNG file
 
     Parameters
     ----------
