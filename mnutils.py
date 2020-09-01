@@ -174,6 +174,46 @@ def dict2plot_x_keys(indict, filename,
     plt.savefig(filename)
 
 
+def feature_starts_from_gff3(filename, target_feature="five_prime_UTR"):
+    """Parse start positions and orientations of feature type of interest from
+    GFF3 file
+
+    Parameters
+    ----------
+    filename : str
+        Path to GFF3 file
+    target_feature : str
+        Type of feature to extract
+
+    Returns
+    -------
+    defaultdict
+        Dict of start positions keyed by scaffold -> orientation. Assumes that 
+        features have orientation!
+    """
+    out = defaultdict(lambda: defaultdict(list))
+    with open(filname, "r") as fh:
+        for line in fh:
+            line.rstrip()
+            lsplit = line.split("\t")
+            if len(lsplit) == 9: # Check for correctly formatted GFF3
+                scaffold = lsplit[0]
+                feature = lsplit[2]
+                start = lsplit[3]
+                stop = lsplit[4]
+                orientation = lsplit[6]
+                if feature == target_feature:
+                    if orientation == "+":
+                        out[scaffold]['+'].append(int(start))
+                    elif orientation == "-":
+                        out[scaffold]['-'].append(int(stop))
+                        # We can do this because GFF coordinates are both 
+                        # inclusive
+                    else:
+                        logging.warning(f"Feature {target_feature} at position {scaffold} {start} {stop} has invalid orientation {orientation}")
+    return(out)
+
+
 # -----------------------------------------------------------------------------
 
 class Posmap(object):
