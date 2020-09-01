@@ -21,11 +21,16 @@ parser.add_argument("--max_tlen", type=int, default=166,
 parser.add_argument("--max_mismatch", type=int, default=1,
                     help="Maximum mismatch allowed per alignment")
 parser.add_argument("--phaseogram", 
-                    help="Calculate phaseogram? (slow)")
+                    help="Calculate global phaseogram? (slow)")
+parser.add_argument("--gff", type=str,
+                    help="GFF3 file with features of interest")
+parser.add_argument("--feature", type=str, default="five_prime_UTR",
+                    help="Type of feature to produce phaseogram for")
 args = parser.parse_args()
 
 # Logging config
 logging.basicConfig(format='[%(asctime)s] %(message)s', level=logging.INFO)
+
 
 
 def get_midpoint(segment):
@@ -172,90 +177,117 @@ def dict2plot_x_keys(indict, filename,
 
 # -----------------------------------------------------------------------------
 
-# Open BAM files
-logging.info(f"Opening SAM file {args.input}")
-samfile = pysam.AlignmentFile(args.input, "rb")
-# samout = pysam.AlignmentFile(args.output,"wb",template=samfile)
+class Posmap(object):
+    def __init__(self):
+        """Construct new Posmap object
+        
+        _midpoints : defaultdict
+            dict of nucleosome midpoints parsed from MNase-Seq mapping
+            keyed by scaffold -> pos -> list of fragment lengths
+        _tlen_histogram : defaultdict
+            Histogram of fragment lengths
+        """
+        self._midpoints = defaultdict(lambda: defaultdict(list))
+        self._tlen_histogram = defaultdict(int)
 
-if args.scaffold:
-    logging.info(f"Fetching only scaffold {args.scaffold}")
-    samiter = samfile.fetch(args.scaffold)
-else:
-    logging.info(f"Fetching all scaffolds")
-    samiter = samfile.fetch()
 
-# Dict of scaffold -> pos -> frag start counts
-fragstarts_fwd = defaultdict(lambda: defaultdict(int))
-fragstarts_rev = defaultdict(lambda: defaultdict(int))
+    def read_bam(self, bamfile, 
+            *, scaffold=None, min_tlen=126, max_tlen=166):
+        """Read BAM file and process it into nucleosome midpoint position map
+        and fragment length histogram
 
-# List of tuples of mipdoints
-midpoints = []
+        Parameters
+        ----------
+        bamfile : str
+            Path to indexed BAM file to open with pysam
+        scaffold : str
+            Optional - parse this scaffold only
+        min_tlen : int
+            Lower length limit to consider a nucleosome fragment
+        max_tlen : int
+            Upper length limit to consider a nucleosome fragment
+        """
+        # Open BAM files
+        logging.info(f"Opening BAM file {bamfile}")
+        bamfh = pysam.AlignmentFile(bamfile, "rb")
+        if scaffold:
+            logging.info(f"Fetching only scaffold {scaffold}")
+            bamiter = bamfh.fetch(scaffold)
+        else:
+            logging.info(f"Fetching all scaffolds")
+            bamiter = bamfh.fetch()
+        logging.info(f"Nucleosome length limits {min_tlen} and {max_tlen}")
+        for read in bamiter:
+            if (not read.is_secondary and
+                    not read.is_duplicate and
+                    read.get_tag("NM") <= 1):
+                # TODO: Mismatches should actually be summed for each read PAIR,
+                # not for each read segment as is currently done here
+                if (read.template_length > 0): 
+                    # To avoid double counting of read pairs, only consider 
+                    # template lengths > 0, because template_length is negative
+                    # for read2 in segment, and is 0 for unpaired
+                    self._tlen_histogram[read.template_length] += 1
+                if (read.template_length >= args.min_tlen and
+                        read.template_length <= args.max_tlen and 
+                        read.is_read1):
+                    # Record midpoints only for reads within fragment length 
+                    # criteria, and only for read1 in segment to avoid double
+                    # counting
+                    ref, pos, tlen = get_midpoint(read)
+                    self._midpoints[ref][pos].append(int(tlen))
+        bamfh.close
 
-# Length histogram
-tlen_histogram = defaultdict(int)
+    def high_acc_frag_pc(self, nucl=147, window=2):
+        """Find percentage of fragments with lengths close to true 
+        nucleosome fragment length
 
-# for each aligned segment, report only those segments with template lengths
-# within min/max limits
-logging.info("Iterating through all reads in SAM file")
-logging.info(f"Nucleosome length limits {args.min_tlen} and {args.max_tlen}")
-for read in samiter:
-    if (not read.is_secondary and
-            not read.is_duplicate and
-            read.get_tag("NM") <= 1):
-        # TODO: Filter out reads with more than one mismatch, with NM tag
-        # Actually mismatches should be summed for each read PAIR, not just
-        # each read
+        Parameters
+        ----------
+        nucl : int
+            True length of nucleosome, in bp
+        window : int
+            Window (one-sided) of lengths to consider as "high accuracy"
 
-        # Count number of fragment starts per base position per scaffold
-        ref, pos, ori = get_frag_start(read)
-        if ori == "fwd":
-            fragstarts_fwd[ref][pos] += 1
-        elif ori == "rev":
-            fragstarts_rev[ref][pos] += 1
+        Returns
+        -------
+        float
+            Percentage of fragments within high-accuracy length range
+        """
+        highacc = [int(self._tlen_histogram[k]) 
+                    for k in range(nucl-window, nucl+1+window) 
+                    if self._tlen_histogram[k]]
+        tlen_total = sum([int(v) for v in self._tlen_histogram.values()])
+        highacc_pc = 100 * sum(highacc) / tlen_total
+        return(highacc_pc)
 
-        if (read.template_length > 0): 
-            # Avoid double counting, template_length is negative for rev reads
-            # and is zero for unpaired
-            tlen_histogram[read.template_length] += 1
 
-        if (read.template_length >= args.min_tlen and
-                read.template_length <= args.max_tlen):
-            # Record midpoints only for reads within fragment length criteria
-            # samout.write(read)
-            midpoints.append(get_midpoint(read))
+# MAIN # -----------------------------------------------------------------------
 
-samfile.close
+posmap = Posmap()
 
-# Get high-accuracy fragments and calculate percentage of total fragments
-highacc = [int(tlen_histogram[k]) for k in range(145,151) if tlen_histogram[k]]
-tlen_total = sum([int(v) for v in tlen_histogram.values()])
-highacc_pc = 100 * sum(highacc) / tlen_total
+posmap.read_bam(args.input, 
+        scaffold=args.scaffold, 
+        min_tlen=args.min_tlen,
+        max_tlen=args.max_tlen)
+
+highacc_pc = posmap.high_acc_frag_pc()
 logging.info(f"High accuracy fragments constitute {round(highacc_pc,2)}% of fragments")
 if highacc_pc < 20:
     logging.info("Percentage is lower than 20%, high-accuracy method may not work well")
 
-
-# listtuples_to_tsv(fragstarts,"test_fragstarts.tsv")
 logging.info("Writing output files")
-with open(f"{args.output}.fragstarts_fwd.json", "w") as fh:
-    json.dump(fragstarts_fwd, fh, indent=4)
-with open(f"{args.output}.fragstarts_rev.json", "w") as fh:
-    json.dump(fragstarts_rev, fh, indent=4)
 with open(f"{args.output}.tlen_hist.json","w") as fh:
-    json.dump(tlen_histogram, fh, indent=4)
-dict2plot_x_keys(tlen_histogram, title="Template length histogram", 
+    json.dump(posmap._tlen_histogram, fh, indent=4)
+dict2plot_x_keys(posmap._tlen_histogram, title="Template length histogram", 
         xlabel="length", ylabel="counts", 
         xlim=(0,500), # hard-windowed to these limits for Illumina
         filename=f"{args.output}.tlen_hist.png")
-listtuples_to_tsv(midpoints, f"{args.output}.midpoints.tsv")
+with open(f"{args.output}.midpoints.json","w") as fh:
+    json.dump(posmap._midpoints, fh, indent=4)
 
 if args.phaseogram:
     logging.info("Calculating phaseogram")
-    phaseogram_fwd = fragstarts_dict_to_phaseogram(fragstarts_fwd)
-    # phaseogram_rev = fragstarts_dict_to_phaseogram(fragstarts_rev)
-    with open(f"{args.output}.phaseogram_fwd.json", "w") as fh:
-        json.dump(phaseogram_fwd, fh, indent=4)
-    # with open("test_phaseogram_rev.json", "w") as fh:
-    #     json.dump(phaseogram_rev, fh, indent=4)
+    # TODO: Implement phaseogram calculation with midpoints
 
 logging.info("Done")
