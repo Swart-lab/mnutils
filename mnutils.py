@@ -13,6 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input", type=str, help="Input BAM file")
 parser.add_argument("-o", "--output", type=str,
                     help="Output prefix", default="test")
+parser.add_argument("--dump", help="Dump JSON files of internal objects")
 parser.add_argument("--scaffold", type=str, help="Scaffold to filter")
 parser.add_argument("--min_tlen", type=int, default=126,
                     help="Minimum template insert length for read pair")
@@ -316,14 +317,16 @@ if highacc_pc < 20:
     logging.info("Percentage is lower than 20%, high-accuracy method may not work well")
 
 logging.info("Writing output files")
-with open(f"{args.output}.tlen_hist.json","w") as fh:
-    json.dump(posmap._tlen_histogram, fh, indent=4)
 dict2plot_x_keys(posmap._tlen_histogram, title="Template length histogram", 
         xlabel="length", ylabel="counts", 
         xlim=(0,500), # hard-windowed to these limits for Illumina
         filename=f"{args.output}.tlen_hist.png")
-with open(f"{args.output}.midpoints.json","w") as fh:
-    json.dump(posmap._midpoints, fh, indent=4)
+if args.dump:
+    logging.info("Dumping internal data to JSON files")
+    with open(f"{args.output}.tlen_hist.json","w") as fh:
+        json.dump(posmap._tlen_histogram, fh, indent=4)
+    with open(f"{args.output}.midpoints.json","w") as fh:
+        json.dump(posmap._midpoints, fh, indent=4)
 
 if args.phaseogram:
     logging.info("Calculating phaseogram")
