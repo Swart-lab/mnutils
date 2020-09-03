@@ -318,12 +318,17 @@ class Posmap(object):
         window : int
             Window (symmetrical, up and downstream) in bp
         subsample : int
-            Randomly sample this number of positions per scaffold
+            Randomly sample this number of positions per scaffold.
+            If the number of positions is less, then use all positions.
         """
         phaseogram = defaultdict(int)
 
         for scaffold in self._positionmap:
-            for pos in sample(list(self._positionmap[scaffold]), subsample):
+            if len(self._positionmap[scaffold]) > subsample:
+                poss = sample(list(self._positionmap[scaffold]), subsample)
+            else:
+                poss = self._positionmap[scaffold]
+            for pos in poss:
                 left = pos - window
                 right = pos + window
                 width = right - left
