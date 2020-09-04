@@ -6,7 +6,8 @@ MNase-Seq or DNase-Seq experiments.
 
 # Input data
 
- * BAM/SAM mapping of MNase-Seq reads to reference genome
+ * BAM/SAM mapping of MNase-Seq reads to reference genome. Original sequencing
+   data must have been paired-end sequencing.
  * Fasta file of reference genome sequence
  * GFF file of genomic features corresponding to sequence file
 
