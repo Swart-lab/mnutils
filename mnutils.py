@@ -159,6 +159,10 @@ if args.gff:
         with open(f"{args.output}.phaseogram.{args.feature}.json","w") as fh:
             json.dump(phaseogram_feature, fh, indent=4)
 
+logging.info("Smoothing position map")
+posmap.smooth_gaussian_positionmap(windowsize=50, bandwidth=10)
+posmap.smooth_gaussian_positionmap_to_wig(f"{args.output}.posmap_smooth.wig")
+
 logging.info("Writing output files")
 dict2plot_x_keys(posmap._tlen_histogram, title="Template length histogram", 
         xlabel="Length (bp)", ylabel="Counts", 
@@ -170,6 +174,10 @@ if args.dump:
         json.dump(posmap._tlen_histogram, fh, indent=4)
     with open(f"{args.output}.posdict.json","w") as fh:
         json.dump(posmap._posdict, fh, indent=4)
+    with open(f"{args.output}.posmap.json","w") as fh:
+        json.dump(posmap._positionmap, fh, indent=4)
+    with open(f"{args.output}.posmap_smooth.json", "w") as fh:
+        json.dump(posmap._positionmap_smooth, fh, indent=4)
 
 if args.phaseogram:
     logging.info("Calculating global phaseogram with subsample of 5000 per scaffold")

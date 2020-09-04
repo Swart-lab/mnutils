@@ -105,6 +105,56 @@ class Posmap(object):
         return(highacc_pc)
 
 
+    def smooth_gaussian_positionmap(self, windowsize=50, bandwidth=10):
+        """Gaussian smooth position map
+
+        Remember that the position map has interval 0.5.
+
+        Parameters
+        ----------
+        windowsize : int
+            Size of sliding window for smoother
+        bandwidth : int
+            Radius of Gaussian smoother
+
+        Output to self._positionmap_smooth is a dict of lists, keyed by 
+        scaffold. Each list contains array of smoothed values, with interval 1
+        """
+        self._positionmap_smooth = {}
+        for scaffold in self._positionmap:
+            yy_raw = [] # Raw smoothed values
+            max_x = max([int(i) for i in self._positionmap[scaffold]])
+            # Convert position map dict to array, filling in zeroes
+            for i in range(1,max_x+1): # Start from 1 because 1 -based numbering
+                if i in self._positionmap[scaffold]:
+                    yy_raw.append(self._positionmap[scaffold][i])
+                else:
+                    yy_raw.append(0)
+            yy_smooth, x_smooth_start = Shared.smooth_gaussian_integer_intervals(yy_raw, 1,1, 50, 10)
+            # Prepend zeroes to smoothed curve
+            yy_smooth = [0.0] * int(x_smooth_start) + yy_smooth
+            self._positionmap_smooth[scaffold] = yy_smooth
+
+
+    def smooth_gaussian_positionmap_to_wig(self, filename):
+        """Write Wiggle Track Format (WIG) file of smoothed position map
+
+        Parameters
+        ----------
+        filename : str
+            Path to write WIG file
+        """
+        if len(self._positionmap_smooth) == 0:
+            warnings.warn("Smoothed position map was not calculated")
+        with open(filename, "w") as fh:
+            for scaffold in self._positionmap_smooth:
+                # WIG files use 1-based numbering
+                # TODO: Check for off-by-one errors...
+                fh.write(f"fixedStep chrom={scaffold} start=1 step=1\n")
+                for i in self._positionmap_smooth[scaffold]:
+                    fh.write(f"{i}\n")
+
+
     def global_phaseogram(self, window=1000, subsample=1000):
         """Calculate phaseogram of nucleosome positions up and downstream
         from other nucleosome.
