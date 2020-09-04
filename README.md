@@ -19,6 +19,11 @@ MNase-Seq or DNase-Seq experiments.
    read starts)
    * With the high-accuracy procedure of Cole (2012)
    * With broader fragment range
+   * Smoothed positioning map
+   * Occupancy map (smoothing with uniform kernel and width 73)
  * Nucleosome conditional positioning map (like Kaplan 2010)
  * Nucleosome global phaseogram (using nucleosome _centers_ rather than read starts)
+ * Nucleosome locality map
+ * Nucleosome calls (using iterative procedure of Kaplan et al 2010)
  * Nucleosome feature-specific phaseogram (e.g. relative to TSS)
+ * Well positioned nucleosome array calls (using FFT procedure)
