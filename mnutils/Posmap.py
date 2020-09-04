@@ -17,11 +17,16 @@ class Posmap(object):
         _positionmap : dict
             dict of nucleosome raw position coverage
             keyed by scaffold -> pos -> no. nucleosome fragments
+        _positionmap_smooth : dict
+            dict of smoothed position coverage
+            keyed by scaffold -> list of position coverage values
         _tlen_histogram : defaultdict
             Histogram of fragment lengths
         """
         self._posdict = defaultdict(lambda: defaultdict(list))
         self._positionmap = dict()
+        self._positionmap_list = dict()
+        self._positionmap_smooth = dict()
         self._tlen_histogram = defaultdict(int)
 
 
@@ -73,7 +78,7 @@ class Posmap(object):
         bamfh.close
         logging.info("Calculating nucleosome position map")
         for ref in self._posdict:
-            self._positionmap[ref] = {float(i): len(j) for i, j in self._posdict[ref].items()}
+            self._positionmap[ref] = {int(i): len(j) for i, j in self._posdict[ref].items()}
 
 
     def high_acc_frag_pc(self, nucl=147, window=2):
@@ -113,6 +118,7 @@ class Posmap(object):
             If the number of positions is less, then use all positions.
         """
         phaseogram = defaultdict(int)
+        phaseogram[0] = 0
 
         for scaffold in self._positionmap:
             if len(self._positionmap[scaffold]) > subsample:
@@ -120,14 +126,13 @@ class Posmap(object):
             else:
                 poss = self._positionmap[scaffold]
             for pos in poss:
-                left = pos - window
-                right = pos + window
+                left = int(pos - window)
+                right = int(pos + window)
                 width = right - left
-                for j in range(2 * 2 * window):
-                    jumppos = left + j/2
-                    if jumppos in self._positionmap[scaffold].keys():
-                        phaseogram[j/2 - window] += self._positionmap[scaffold][jumppos]
-
+                for j in range(2 * window):
+                    jumppos = left + j
+                    if jumppos in self._positionmap[scaffold]:
+                        phaseogram[j - window] += self._positionmap[scaffold][jumppos]
         return(phaseogram)
 
 
@@ -154,14 +159,13 @@ class Posmap(object):
                         left = fwd_start - window
                         right = fwd_start + window
                         width = right - left
-                        for j in range(2 * width):
-                            jumppos = float()
+                        for j in range(width):
                             if orientation == '+':
-                                jumppos = left + j/2 # Account for half-integer positions
+                                jumppos = left + j
                             elif orientation == '-':
-                                jumppos = right - j/2
+                                jumppos = right - j
                             if jumppos in self._positionmap[scaffold]:
-                                phaseogram[j/2 - window] += self._positionmap[scaffold][jumppos]
+                                phaseogram[j - window] += self._positionmap[scaffold][jumppos]
             else:
                 logging.warning(f"Scaffold {scaffold} in GFF file {gff3_file} but not in mapping")
         return(phaseogram)

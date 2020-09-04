@@ -28,7 +28,9 @@ def get_midpoint(segment):
         midpoint = segment.reference_end - (tlen/2)
     else:
         midpoint = segment.reference_start + (tlen/2)
-    # midpoint = round(midpoint)
+    midpoint = int(midpoint + 0.5) 
+    # builtin round(midpoint) doesn't work properly for some reason, will 
+    # always yield an even number, e.g. round(1.5) -> 2 and round(4.5) -> 4
     return(ref, midpoint, tlen)
 
 
