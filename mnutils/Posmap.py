@@ -151,17 +151,24 @@ class Posmap(object):
             self._positionmap_smooth[scaffold] = yy_smooth
 
 
-    def smooth_gaussian_positionmap_to_wig(self, filename):
-        """Write Wiggle Track Format (WIG) file of smoothed position map
+    def write_wig(self, filename, which="smooth"):
+        """Write position map to WIG format
 
         Parameters
         ----------
         filename : str
             Path to write WIG file
+        which : str
+            Which position map to write? Valid values: "raw", "smooth"
         """
-        if len(self._positionmap_smooth) == 0:
-            warnings.warn("Smoothed position map was not calculated")
-        Shared.dict_to_wig(self._positionmap_smooth, filename)
+        if which == "smooth":
+            if len(self._positionmap_smooth) == 0:
+                warnings.warn("Smoothed position map was not calculated")
+            Shared.dict_to_wig(self._positionmap_smooth, filename)
+        else:
+            if len(self._positionmap_list) == 0:
+                warnings.warn("Raw position map was not initialized")
+            Shared.dict_to_wig(self._positionmap_list, filename)
 
 
     def global_phaseogram(self, window=1000, subsample=1000):

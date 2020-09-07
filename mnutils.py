@@ -161,13 +161,14 @@ if args.gff:
 
 logging.info("Smoothing position map")
 posmap.smooth_gaussian_positionmap(windowsize=50, bandwidth=10)
-posmap.smooth_gaussian_positionmap_to_wig(f"{args.output}.posmap_smooth.wig")
 
 logging.info("Writing output files")
 dict2plot_x_keys(posmap._tlen_histogram, title="Template length histogram", 
         xlabel="Length (bp)", ylabel="Counts", 
         xlim=(0,500), # hard-windowed to these limits for Illumina
         filename=f"{args.output}.tlen_hist.png")
+posmap.write_wig(f"{args.output}.posmap_raw.wig","raw")
+posmap.write_wig(f"{args.output}.posmap_smooth.wig","smooth")
 if args.dump:
     logging.info("Dumping internal data to JSON files")
     with open(f"{args.output}.tlen_hist.json","w") as fh:
