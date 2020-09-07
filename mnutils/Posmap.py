@@ -30,6 +30,23 @@ class Posmap(object):
         self._tlen_histogram = defaultdict(int)
 
 
+    def _positionmap_to_list(self):
+        """Convert position map from dict of dicts to dict of lists.
+
+        Raw position map is a dict of dicts. Convert to dict of lists, where 
+        each list represents position map of a scaffold, with 1 bp intervals.
+        """
+        for scaffold in self._positionmap:
+            self._positionmap_list[scaffold] = [] # Raw unsmoothed values
+            max_x = max([int(i) for i in self._positionmap[scaffold]])
+            # Convert position map dict to array, filling in zeroes
+            for i in range(1,max_x+1): # Start from 1 because 1 -based numbering
+                if i in self._positionmap[scaffold]:
+                    self._positionmap_list[scaffold].append(self._positionmap[scaffold][i])
+                else:
+                    self._positionmap_list[scaffold].append(0)
+
+
     def read_bam(self, bamfile,
             *, scaffold=None, min_tlen=126, max_tlen=166):
         """Read BAM file and process it into nucleosome position map and 
@@ -79,6 +96,8 @@ class Posmap(object):
         logging.info("Calculating nucleosome position map")
         for ref in self._posdict:
             self._positionmap[ref] = {int(i): len(j) for i, j in self._posdict[ref].items()}
+        # Convert positionmap dicts to lists
+        self._positionmap_to_list()
 
 
     def high_acc_frag_pc(self, nucl=147, window=2):
@@ -119,16 +138,18 @@ class Posmap(object):
         scaffold. Each list contains array of smoothed values, with interval 1
         """
         self._positionmap_smooth = {}
-        for scaffold in self._positionmap:
-            yy_raw = [] # Raw unsmoothed values
-            max_x = max([int(i) for i in self._positionmap[scaffold]])
-            # Convert position map dict to array, filling in zeroes
-            for i in range(1,max_x+1): # Start from 1 because 1 -based numbering
-                if i in self._positionmap[scaffold]:
-                    yy_raw.append(self._positionmap[scaffold][i])
-                else:
-                    yy_raw.append(0)
-            yy_smooth, x_smooth_start = Shared.smooth_gaussian_integer_intervals(yy_raw, 1,1, 50, 10)
+        for scaffold in self._positionmap_list:
+            # yy_raw = [] # Raw unsmoothed values
+            # max_x = max([int(i) for i in self._positionmap[scaffold]])
+            # # Convert position map dict to array, filling in zeroes
+            # for i in range(1,max_x+1): # Start from 1 because 1 -based numbering
+            #     if i in self._positionmap[scaffold]:
+            #         yy_raw.append(self._positionmap[scaffold][i])
+            #     else:
+            #         yy_raw.append(0)
+            yy_smooth, x_smooth_start = Shared.smooth_gaussian_integer_intervals(
+                    self._positionmap_list[scaffold], 
+                    1, 1, 50, 10)
             # Prepend zeroes to smoothed curve
             yy_smooth = [0.0] * int(x_smooth_start) + yy_smooth
             self._positionmap_smooth[scaffold] = yy_smooth
