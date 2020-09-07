@@ -5,7 +5,6 @@ from collections import defaultdict
 import argparse
 import json
 import logging
-import matplotlib.pyplot as plt
 from mnutils import Shared, Posmap
 
 parser = argparse.ArgumentParser()
@@ -34,104 +33,6 @@ args = parser.parse_args()
 # Logging config
 logging.basicConfig(format='[%(asctime)s] %(message)s', level=logging.INFO)
 
-
-def listtuples_to_tsv(inlist, filename):
-    """
-    Write list of tuples to TSV file
-
-    Parameters
-    ----------
-    inlist : list
-        List of tuples to convert to TSV
-    filename : str
-        Path to file to write output
-    """
-    with open(filename, "w") as fh:
-        for tup in inlist:
-            outstr = "\t".join([str(i) for i in tup])
-            fh.write(outstr)
-            fh.write("\n")
-
-
-def fragstarts_dict_to_phaseogram(indict):
-    """
-    Convert dictionary of fragment start positions to phaseogram
-
-    Parameters
-    ----------
-    indict : defaultdict
-        Dict keyed by scaffolds -> pos -> frag start counts
-
-    Returns
-    -------
-    list
-        List of tuples (displacement, count)
-    """
-
-    # TODO: Normalize per scaffold
-    # TODO: Average counts over total read start sites
-    # TODO: Count frag starts upstream of position instead of downstream
-
-    phaseogram = defaultdict(int)
-
-    for scaffold in indict:
-        for pos in indict[scaffold]:
-            for i in range(1000):
-                jumppos = i + 1 + int(pos)
-                if jumppos in indict[scaffold].keys():
-                    phaseogram[i+1] += indict[scaffold][jumppos]
-
-    return(phaseogram)
-
-
-def dict2plot_x_keys(indict, filename, 
-        *, title=None, xlabel=None, ylabel=None, xlim=None, ylim=None,
-        width=10, height=5):
-    """
-    Plot data of key-value pairs in a dict to PNG file
-
-    Parameters
-    ----------
-    indict : dict
-        dict containing parameters to plot. keys should be convertible to int.
-        keys will be used as x-axis, values will be used as y-axis.
-    filename : str
-        Path to file to write PNG file
-    title : str
-        Title for the plot
-    xlabel : str
-        Label for x-axis
-    ylabel : str
-        Label for y-axis
-    xlim : tuple
-        tuple of limits (start, stop) for x-axis
-    ylim : tuple
-        tuple of limits (start, stop) for y-axis
-    width : int
-        Width of plot (inches)
-    height : int
-        Height of plot (inches)
-    """
-    # Sort input 
-    indict_sort = sorted(indict.items(), key=lambda item: float(item[0]))
-    xx = [float(i) for i,j in indict_sort]
-    yy = [float(j) for i,j in indict_sort]
-
-    plt.figure(figsize=(width,height))
-    if title:
-        plt.title(title)
-    if xlabel:
-        plt.xlabel(xlabel)
-    if ylabel:
-        plt.ylabel(ylabel)
-    if xlim:
-        plt.xlim(xlim)
-    if ylim:
-        plt.ylim(ylim)
-    plt.plot(xx,yy)
-    plt.savefig(filename)
-
-
 # MAIN # -----------------------------------------------------------------------
 
 posmap = Posmap.Posmap()
@@ -152,7 +53,7 @@ if args.gff:
     phaseogram_feature = posmap.feature_phaseogram(args.gff, 
             target_feature=args.feature, 
             window=1000)
-    dict2plot_x_keys(phaseogram_feature, title=f"Phaseogram around {args.feature} starts",
+    Shared.dict2plot_x_keys(phaseogram_feature, title=f"Phaseogram around {args.feature} starts",
             xlabel="Position vs. feature start (bp)",
             ylabel="Nucleosome position counts",
             xlim=(-1000,1000),
@@ -170,7 +71,7 @@ if args.locmap:
     posmap.smooth_gaussian_locmap()
 
 logging.info("Writing output files")
-dict2plot_x_keys(posmap._tlen_histogram, title="Template length histogram", 
+Shared.dict2plot_x_keys(posmap._tlen_histogram, title="Template length histogram", 
         xlabel="Length (bp)", ylabel="Counts", 
         xlim=(0,500), # hard-windowed to these limits for Illumina
         filename=f"{args.output}.tlen_hist.png")
@@ -201,7 +102,7 @@ if args.dump:
 if args.phaseogram:
     logging.info("Calculating global phaseogram with subsample of 5000 per scaffold")
     phaseogram_global = posmap.global_phaseogram(subsample=5000)
-    dict2plot_x_keys(phaseogram_global, title=f"Global phaseogram for nucleosome positions",
+    Shared.dict2plot_x_keys(phaseogram_global, title=f"Global phaseogram for nucleosome positions",
             xlabel="Position vs. nucleosome (bp)",
             ylabel="Nucleosome position counts",
             xlim=(-1000,1000),

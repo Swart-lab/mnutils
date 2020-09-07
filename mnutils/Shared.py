@@ -3,6 +3,7 @@
 from math import e
 import warnings
 import logging
+import matplotlib.pyplot as plt
 from collections import defaultdict
 
 
@@ -256,3 +257,54 @@ def feature_starts_from_gff3(filename, target_feature="five_prime_UTR"):
                     else:
                         logging.warning(f"Feature {target_feature} at position {scaffold} {start} {stop} has invalid orientation {orientation}")
     return(out)
+
+
+def dict2plot_x_keys(indict, filename, 
+        *, title=None, xlabel=None, ylabel=None, xlim=None, ylim=None,
+        width=10, height=5):
+    """
+    Plot data of key-value pairs in a dict to PNG file
+
+    Parameters
+    ----------
+    indict : dict
+        dict containing parameters to plot. keys should be convertible to int.
+        keys will be used as x-axis, values will be used as y-axis.
+    filename : str
+        Path to file to write PNG file
+    title : str
+        Title for the plot
+    xlabel : str
+        Label for x-axis
+    ylabel : str
+        Label for y-axis
+    xlim : tuple
+        tuple of limits (start, stop) for x-axis
+    ylim : tuple
+        tuple of limits (start, stop) for y-axis
+    width : int
+        Width of plot (inches)
+    height : int
+        Height of plot (inches)
+    """
+    # Sort input 
+    indict_sort = sorted(indict.items(), key=lambda item: float(item[0]))
+    xx = [float(i) for i,j in indict_sort]
+    yy = [float(j) for i,j in indict_sort]
+
+    plt.figure(figsize=(width,height))
+    if title:
+        plt.title(title)
+    if xlabel:
+        plt.xlabel(xlabel)
+    if ylabel:
+        plt.ylabel(ylabel)
+    if xlim:
+        plt.xlim(xlim)
+    if ylim:
+        plt.ylim(ylim)
+    plt.plot(xx,yy)
+    plt.savefig(filename)
+
+
+
