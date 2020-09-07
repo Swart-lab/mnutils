@@ -54,6 +54,55 @@ def get_frag_start(segment):
         return(segment.reference_name, segment.reference_start, "fwd")
 
 
+def dict_to_wig(indict, filename):
+    """Write Wiggle Track Format (WIG) file from dict of lists
+
+    Parameters
+    ----------
+    indict : dict
+        dict of lists, where keys are scaffold names
+    filename : str
+        Path to write WIG file
+    """
+    with open(filename, "w") as fh:
+        for scaffold in indict:
+            # WIG files use 1-based numbering
+            # TODO: Check for off-by-one errors...
+            fh.write(f"fixedStep chrom={scaffold} start=1 step=1\n")
+            for i in indict[scaffold]:
+                fh.write(f"{i}\n")
+
+
+def localization_measure(yy_raw, int_rad=20, ext_rad=80):
+    """Calculate the localization measure of Zhang et al. from raw nucleosome
+    position map.
+
+    Parameters
+    ----------
+    yy_raw : list
+        Raw nucleosome position map, i.e. counts of nucleosomes per position for
+        each position, at 1 bp intervals.
+    int_rad : int
+        Internal window radius. Note that this is a radius so the internal 
+        window width is 2 * int_rad
+    ext_rad : int
+        External window radius. Note that this is a radius, like int_rad
+
+    Returns
+    -------
+    list
+        Localization measure values per position, at 1 bp intervals
+    """
+    out = [0.0] * ext_rad # Initialize output with zeroes for the left margin
+    for center in range(ext_rad, len(yy_raw) - ext_rad):
+        int_window = yy_raw[center - int_rad : center + int_rad]
+        ext_window = yy_raw[center - ext_rad : center + ext_rad]
+        loc = float(sum(int_window) / sum(ext_window))
+        out.append(loc)
+    out.extend([0.0] * ext_rad) # Pad right margin with zeroes
+    return(out)
+
+
 def gaussian_kernel_coeffs(bandwidth, xx, x_null):
     """Precompute coefficients for Gaussian smoothing kernel
     

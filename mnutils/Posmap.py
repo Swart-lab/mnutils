@@ -15,11 +15,14 @@ class Posmap(object):
             dict of nucleosome positions parsed from MNase-Seq mapping
             keyed by scaffold -> pos -> list of fragment lengths
         _positionmap : dict
-            dict of nucleosome raw position coverage
-            keyed by scaffold -> pos -> no. nucleosome fragments
+            dict of dicts nucleosome raw position coverage
+            keyed by scaffold -> pos -> no. nucleosome fragments per pos
+        _positionmap_list : dict
+            dict of lists of nucleosome raw position coverage
+            keyed by scaffold -> list of raw position coverage values
         _positionmap_smooth : dict
             dict of smoothed position coverage
-            keyed by scaffold -> list of position coverage values
+            keyed by scaffold -> list of smoothed position coverage values
         _tlen_histogram : defaultdict
             Histogram of fragment lengths
         """
@@ -139,14 +142,7 @@ class Posmap(object):
         """
         self._positionmap_smooth = {}
         for scaffold in self._positionmap_list:
-            # yy_raw = [] # Raw unsmoothed values
-            # max_x = max([int(i) for i in self._positionmap[scaffold]])
-            # # Convert position map dict to array, filling in zeroes
-            # for i in range(1,max_x+1): # Start from 1 because 1 -based numbering
-            #     if i in self._positionmap[scaffold]:
-            #         yy_raw.append(self._positionmap[scaffold][i])
-            #     else:
-            #         yy_raw.append(0)
+            # Calculate smoothed curve
             yy_smooth, x_smooth_start = Shared.smooth_gaussian_integer_intervals(
                     self._positionmap_list[scaffold], 
                     1, 1, 50, 10)
@@ -165,13 +161,7 @@ class Posmap(object):
         """
         if len(self._positionmap_smooth) == 0:
             warnings.warn("Smoothed position map was not calculated")
-        with open(filename, "w") as fh:
-            for scaffold in self._positionmap_smooth:
-                # WIG files use 1-based numbering
-                # TODO: Check for off-by-one errors...
-                fh.write(f"fixedStep chrom={scaffold} start=1 step=1\n")
-                for i in self._positionmap_smooth[scaffold]:
-                    fh.write(f"{i}\n")
+        Shared.dict_to_wig(self._positionmap_smooth, filename)
 
 
     def global_phaseogram(self, window=1000, subsample=1000):
