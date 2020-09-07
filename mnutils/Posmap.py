@@ -108,8 +108,6 @@ class Posmap(object):
     def smooth_gaussian_positionmap(self, windowsize=50, bandwidth=10):
         """Gaussian smooth position map
 
-        Remember that the position map has interval 0.5.
-
         Parameters
         ----------
         windowsize : int
@@ -122,7 +120,7 @@ class Posmap(object):
         """
         self._positionmap_smooth = {}
         for scaffold in self._positionmap:
-            yy_raw = [] # Raw smoothed values
+            yy_raw = [] # Raw unsmoothed values
             max_x = max([int(i) for i in self._positionmap[scaffold]])
             # Convert position map dict to array, filling in zeroes
             for i in range(1,max_x+1): # Start from 1 because 1 -based numbering
