@@ -106,6 +106,40 @@ def localization_measure(yy_raw, int_rad=20, ext_rad=80):
     return(out)
 
 
+def find_peaks_iter(yy, mask_rad=70, min_peak=0.1):
+    """Iteratively find peaks and mask surrounding radius until no more peaks
+    found
+
+    Parameters
+    ----------
+    yy : list
+        list of values to search for peaks
+    mask_rad: int
+        Radius around found peaks to be masked; peaks must be at least this
+        distance apart. NB this is a radius so window is 2*mask_rad
+    min_peak : float
+        Minimum (exclusive) value for peak to be assigned. Algorithm stops when 
+        values in list are not higher than this.
+    """
+    yy_copy = yy.copy() # Make copy of the original list that we can copy
+    out=[] # record peak positions
+    out2=[] # for peaks whose radii overlap with existing peaks
+    while(max(yy_copy) > min_peak):
+        # Get highest point which we call a peak
+        peak_idx = yy.index(max(yy))
+        if min(yy_copy[peak_idx - mask_rad : peak_idx + mask_rad]) > 0:
+            # If peak is not within radius of another peak, append to list
+            out.append(peak_idx)
+            # Mark radius around peak as -1
+            yy_copy[peak_idx - mask_rad : peak_idx + mask_rad] = [-1] * (2*mask_rad)
+        else:
+            # Look for peaks that are within radius of another peak
+            # Append to a separate list
+            out2.append(peak_idx)
+            yy_copy[peak_idx - mask_rad : peak_idx + mask_rad] = [-2] * (2*mask_rad)
+    return(out, out2)
+
+
 def gaussian_kernel_coeffs(bandwidth, xx, x_null):
     """Precompute coefficients for Gaussian smoothing kernel
     
