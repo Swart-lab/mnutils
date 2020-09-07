@@ -22,8 +22,8 @@ MNase-Seq or DNase-Seq experiments.
    [x] Smoothed positioning map
    [ ] Occupancy map (smoothing with uniform kernel and width 73)
  [ ] Nucleosome conditional positioning map (like Kaplan 2010)
- [x] Nucleosome global phaseogram (using nucleosome _centers_ rather than read starts)
- [x] Nucleosome localization measure map
+ [x] Nucleosome global phaseogram (using nucleosome _centers_ vs read starts)
+ [x] Nucleosome localization measure map (using procedure of Zhang et al.)
  [ ] Nucleosome calls (using iterative procedure of Kaplan et al 2010)
  [x] Nucleosome feature-specific phaseogram (e.g. relative to TSS)
  [ ] Well positioned nucleosome array calls (using FFT procedure)
