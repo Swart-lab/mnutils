@@ -21,6 +21,8 @@ parser.add_argument("--max_tlen", type=int, default=166,
                     help="Maximum template insert length for read pair")
 parser.add_argument("--max_mismatch", type=int, default=1,
                     help="Maximum mismatch allowed per alignment")
+parser.add_argument("--locmap", action="store_true",
+                    help="Calculate localization measure sensu Zhang et al.")
 parser.add_argument("--phaseogram", action="store_true",
                     help="Calculate global phaseogram? (slow)")
 parser.add_argument("--gff", type=str,
@@ -162,6 +164,11 @@ if args.gff:
 logging.info("Smoothing position map")
 posmap.smooth_gaussian_positionmap(windowsize=50, bandwidth=10)
 
+if args.locmap:
+    logging.info("Calculating localization score sensu Zhang et al.")
+    posmap.calculate_locmap()
+    posmap.smooth_gaussian_locmap()
+
 logging.info("Writing output files")
 dict2plot_x_keys(posmap._tlen_histogram, title="Template length histogram", 
         xlabel="Length (bp)", ylabel="Counts", 
@@ -169,6 +176,10 @@ dict2plot_x_keys(posmap._tlen_histogram, title="Template length histogram",
         filename=f"{args.output}.tlen_hist.png")
 posmap.write_wig(f"{args.output}.posmap_raw.wig","raw")
 posmap.write_wig(f"{args.output}.posmap_smooth.wig","smooth")
+if args.locmap:
+    posmap.write_wig(f"{args.output}.locmap_raw.wig","raw_locmap")
+    posmap.write_wig(f"{args.output}.locmap_smooth.wig","smooth_locmap")
+
 if args.dump:
     logging.info("Dumping internal data to JSON files")
     with open(f"{args.output}.tlen_hist.json","w") as fh:
@@ -177,8 +188,15 @@ if args.dump:
         json.dump(posmap._posdict, fh, indent=4)
     with open(f"{args.output}.posmap.json","w") as fh:
         json.dump(posmap._positionmap, fh, indent=4)
+    with open(f"{args.output}.posmap_raw.json", "w") as fh:
+        json.dump(posmap._positionmap_list, fh, indent=4)
     with open(f"{args.output}.posmap_smooth.json", "w") as fh:
         json.dump(posmap._positionmap_smooth, fh, indent=4)
+    if args.locmap:
+        with open(f"{args.output}.locmap_raw.json", "w") as fh:
+            json.dump(posmap._locmap_list, fh, indent=4)
+        with open(f"{args.output}.locmap_smooth.json", "w") as fh:
+            json.dump(posmap._locmap_smooth, fh, indent=4)
 
 if args.phaseogram:
     logging.info("Calculating global phaseogram with subsample of 5000 per scaffold")

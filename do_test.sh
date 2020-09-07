@@ -7,6 +7,7 @@ python mnutils.py -i ../mapping/WTV_default.sort.bam \
 	--scaffold scaffold51_166 \
 	--gff scaffold51_166.gff3 \
 	--phaseogram \
+	--locmap \
 	--dump
 
 # python mnutils.py -i ../mapping/WTV_default.sort.bam \

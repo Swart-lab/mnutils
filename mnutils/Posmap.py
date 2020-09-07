@@ -30,6 +30,8 @@ class Posmap(object):
         self._positionmap = dict()
         self._positionmap_list = dict()
         self._positionmap_smooth = dict()
+        self._locmap_list = dict()
+        self._locmap_smooth = dict()
         self._tlen_histogram = defaultdict(int)
 
 
@@ -48,6 +50,28 @@ class Posmap(object):
                     self._positionmap_list[scaffold].append(self._positionmap[scaffold][i])
                 else:
                     self._positionmap_list[scaffold].append(0)
+
+
+    def calculate_locmap(self, int_rad=20, ext_rad=80):
+        """Convert raw positionmap to localization map
+        """
+        for scaffold in self._positionmap_list:
+            self._locmap_list[scaffold] = Shared.localization_measure(
+                    self._positionmap_list[scaffold],
+                    int_rad, ext_rad)
+
+
+    def smooth_gaussian_locmap(self, windowsize=50, bandwidth=10):
+        """Gaussian smoothing of localization map
+        """
+        for scaffold in self._locmap_list:
+            # Calculate smoothed curve
+            yy_smooth, x_smooth_start = Shared.smooth_gaussian_integer_intervals(
+                    self._locmap_list[scaffold], 
+                    1, 1, 50, 10)
+            # Prepend zeroes to smoothed curve
+            yy_smooth = [0.0] * int(x_smooth_start) + yy_smooth
+            self._locmap_smooth[scaffold] = yy_smooth
 
 
     def read_bam(self, bamfile,
@@ -159,16 +183,25 @@ class Posmap(object):
         filename : str
             Path to write WIG file
         which : str
-            Which position map to write? Valid values: "raw", "smooth"
+            Which position map to write? Valid values: "raw", "smooth", 
+            "raw_locmap", "smooth_locmap"
         """
         if which == "smooth":
             if len(self._positionmap_smooth) == 0:
                 warnings.warn("Smoothed position map was not calculated")
             Shared.dict_to_wig(self._positionmap_smooth, filename)
-        else:
+        elif which == "raw":
             if len(self._positionmap_list) == 0:
                 warnings.warn("Raw position map was not initialized")
             Shared.dict_to_wig(self._positionmap_list, filename)
+        elif which == "raw_locmap":
+            if len(self._locmap_list) == 0:
+                warnings.warn("Raw position map was not initialized")
+            Shared.dict_to_wig(self._locmap_list, filename)
+        elif which == "smooth_locmap":
+            if len(self._locmap_smooth) == 0:
+                warnings.warn("Raw position map was not initialized")
+            Shared.dict_to_wig(self._locmap_smooth, filename)
 
 
     def global_phaseogram(self, window=1000, subsample=1000):
