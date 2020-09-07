@@ -97,7 +97,10 @@ def localization_measure(yy_raw, int_rad=20, ext_rad=80):
     for center in range(ext_rad, len(yy_raw) - ext_rad):
         int_window = yy_raw[center - int_rad : center + int_rad]
         ext_window = yy_raw[center - ext_rad : center + ext_rad]
-        loc = float(sum(int_window) / sum(ext_window))
+        if sum(ext_window) == 0:
+            loc = 0
+        else:
+            loc = float(sum(int_window) / sum(ext_window))
         out.append(loc)
     out.extend([0.0] * ext_rad) # Pad right margin with zeroes
     return(out)
@@ -120,9 +123,7 @@ def gaussian_kernel_coeffs(bandwidth, xx, x_null):
     list
         List of coefficients K corresponding to the input X-values
     """
-
     out = [pow(e, -0.5 * (x - x_null)**2 / bandwidth**2) for x in xx]
-
     return(out)
 
 
