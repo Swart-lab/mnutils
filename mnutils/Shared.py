@@ -9,7 +9,7 @@ from collections import defaultdict
 
 def get_midpoint(segment):
     """
-    Get presumed nucleosome dyad midpoint from digest fragment. 
+    Get presumed nucleosome dyad midpoint from digest fragment.
 
     Parameters
     ----------
@@ -29,8 +29,8 @@ def get_midpoint(segment):
         midpoint = segment.reference_end - (tlen/2)
     else:
         midpoint = segment.reference_start + (tlen/2)
-    midpoint = int(midpoint + 0.5) 
-    # builtin round(midpoint) doesn't work properly for some reason, will 
+    midpoint = int(midpoint + 0.5)
+    # builtin round(midpoint) doesn't work properly for some reason, will
     # always yield an even number, e.g. round(1.5) -> 2 and round(4.5) -> 4
     return(ref, midpoint, tlen)
 
@@ -84,7 +84,7 @@ def localization_measure(yy_raw, int_rad=20, ext_rad=80):
         Raw nucleosome position map, i.e. counts of nucleosomes per position for
         each position, at 1 bp intervals.
     int_rad : int
-        Internal window radius. Note that this is a radius so the internal 
+        Internal window radius. Note that this is a radius so the internal
         window width is 2 * int_rad
     ext_rad : int
         External window radius. Note that this is a radius, like int_rad
@@ -119,7 +119,7 @@ def find_peaks_iter(yy, mask_rad=70, min_peak=0.1):
         Radius around found peaks to be masked; peaks must be at least this
         distance apart. NB this is a radius so window is 2*mask_rad
     min_peak : float
-        Minimum (exclusive) value for peak to be assigned. Algorithm stops when 
+        Minimum (exclusive) value for peak to be assigned. Algorithm stops when
         values in list are not higher than this.
     """
     yy_copy = yy.copy() # Make copy of the original list that we can copy
@@ -143,7 +143,7 @@ def find_peaks_iter(yy, mask_rad=70, min_peak=0.1):
 
 def gaussian_kernel_coeffs(bandwidth, xx, x_null):
     """Precompute coefficients for Gaussian smoothing kernel
-    
+   
     Parameters
     ----------
     bandwidth : float
@@ -166,7 +166,7 @@ def gaussian_kernel_coeffs(bandwidth, xx, x_null):
 
 
 def smooth_gaussian_integer_intervals(yy_raw, x_start, x_interval, x_window, bandwidth):
-    """Perform Gaussian smoothing on a list of raw Y-values where the 
+    """Perform Gaussian smoothing on a list of raw Y-values where the
     X-values are of constant integer intervals
 
     Parameters
@@ -176,7 +176,7 @@ def smooth_gaussian_integer_intervals(yy_raw, x_start, x_interval, x_window, ban
     x_start : int
         X-value corresponding to the initial Y-value
     x_interval : int
-        Interval between Y-values 
+        Interval between Y-values
     x_window : int
         Window (kernel) width, should be an even number and about >3-fold
         the bandwidth
@@ -233,7 +233,7 @@ def feature_starts_from_gff3(filename, target_feature="five_prime_UTR"):
     Returns
     -------
     defaultdict
-        Dict of start positions keyed by scaffold -> orientation. Assumes that 
+        Dict of start positions keyed by scaffold -> orientation. Assumes that
         features have orientation!
     """
     out = defaultdict(lambda: defaultdict(list))
@@ -252,14 +252,14 @@ def feature_starts_from_gff3(filename, target_feature="five_prime_UTR"):
                         out[scaffold]['+'].append(int(start))
                     elif orientation == "-":
                         out[scaffold]['-'].append(int(stop))
-                        # We can do this because GFF coordinates are both 
+                        # We can do this because GFF coordinates are both
                         # inclusive
                     else:
                         logging.warning(f"Feature {target_feature} at position {scaffold} {start} {stop} has invalid orientation {orientation}")
     return(out)
 
 
-def dict2plot_x_keys(indict, filename, 
+def dict2plot_x_keys(indict, filename,
         *, title=None, xlabel=None, ylabel=None, xlim=None, ylim=None,
         width=10, height=5):
     """
@@ -287,7 +287,7 @@ def dict2plot_x_keys(indict, filename,
     height : int
         Height of plot (inches)
     """
-    # Sort input 
+    # Sort input
     indict_sort = sorted(indict.items(), key=lambda item: float(item[0]))
     xx = [float(i) for i,j in indict_sort]
     yy = [float(j) for i,j in indict_sort]
