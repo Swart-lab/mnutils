@@ -103,6 +103,7 @@ class Posmap(object):
         for read in bamiter:
             if (not read.is_secondary and
                     not read.is_duplicate and
+                    read.has_tag('NM') and
                     read.get_tag("NM") <= 1):
                 # TODO: Mismatches should actually be summed for each read PAIR,
                 # not for each read segment as is currently done here
