@@ -4,6 +4,7 @@ from math import e
 import warnings
 import logging
 import matplotlib.pyplot as plt
+plt.switch_backend('agg') # impt for noninteractive use
 from collections import defaultdict
 
 
