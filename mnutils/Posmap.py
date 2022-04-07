@@ -206,19 +206,18 @@ class Posmap(object):
 
 
     def global_phaseogram(self, window=1000, subsample=1000):
-        """Calculate phaseogram of nucleosome positions up and downstream
-        from other nucleosome.
+        """Calculate phaseogram of nucleosome positions downstream from other
+        nucleosome.
 
         Parameters
         ----------
         window : int
-            Window (symmetrical, up and downstream) in bp
+            Window (downstream of target position) in bp
         subsample : int
             Randomly sample this number of positions per scaffold.
             If the number of positions is less, then use all positions.
         """
         phaseogram = defaultdict(int)
-        phaseogram[0] = 0
 
         for scaffold in self._positionmap:
             if len(self._positionmap[scaffold]) > subsample:
@@ -226,13 +225,10 @@ class Posmap(object):
             else:
                 poss = self._positionmap[scaffold]
             for pos in poss:
-                left = int(pos - window)
-                right = int(pos + window)
-                width = right - left
-                for j in range(2 * window):
-                    jumppos = left + j
+                for j in range(1, window): # Start from 1, do not count self
+                    jumppos = pos + j
                     if jumppos in self._positionmap[scaffold]:
-                        phaseogram[j - window] += self._positionmap[scaffold][jumppos]
+                        phaseogram[j] += self._positionmap[scaffold][jumppos]
         return(phaseogram)
 
 
