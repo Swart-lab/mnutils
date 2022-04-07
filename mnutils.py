@@ -106,7 +106,7 @@ if args.phaseogram:
     Shared.dict2plot_x_keys(phaseogram_global, title=f"Global phaseogram for nucleosome positions",
             xlabel="Position vs. nucleosome (bp)",
             ylabel="Nucleosome position counts",
-            xlim=(-1000,1000),
+            xlim=(0,1000),
             filename=f"{args.output}.phaseogram_global.png")
     if args.dump:
         with open(f"{args.output}.phaseogram_global.json","w") as fh:
