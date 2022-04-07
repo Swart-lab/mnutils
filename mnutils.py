@@ -7,7 +7,8 @@ import json
 import logging
 from mnutils import Shared, Posmap
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("-i", "--input", type=str, help="Input BAM file")
 parser.add_argument("-o", "--output", type=str,
                     help="Output prefix", default="test")
